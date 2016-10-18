@@ -12,28 +12,27 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
-# == Class: tripleo::profile::base::neutron::agents::ovn
+# == Class: tripleo::profile::base::neutron::plugins::ml2::ovn
 #
-# OVN Neutron agent profile for tripleo
-#
-# [*ovn_db_host*]
-#   The IP-Address where OVN DBs are listening.
-#   Defaults to hiera('ovn_dbs_vip')
+# OVN Neutron northd profile for tripleo
 #
 # [*step*]
 #   (Optional) The current step in deployment. See tripleo-heat-templates
 #   for more details.
 #   Defaults to hiera('step')
 #
-class tripleo::profile::base::neutron::agents::ovn (
-  $ovn_db_host = hiera('ovn_dbs_vip'),
-  $step = hiera('step')
+class tripleo::profile::base::neutron::ovn_northd (
+  $bootstrap_node = hiera('bootstrap_nodeid', undef),
+  $step = hiera('step'),
 ) {
   if $step >= 4 {
-    $ovn_sbdb_port = hiera('ovn::southbound::port')
-    class { '::ovn::controller':
-      ovn_remote     => "tcp:${ovn_db_host}:${ovn_sbdb_port}",
-      ovn_encap_type => hiera('ovn::southbound::encap_type')
+    # Note this only runs on the first node in the cluster when
+    # deployed on a role where multiple nodes exist.
+    # We'll need to special-case the haproxy config to handle this
+    # so it can still be accessed via the ovn_northd_vip
+    if $::hostname == downcase($bootstrap_node) {
+      include ::ovn::northd
     }
   }
 }
+
